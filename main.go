@@ -1,6 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+)
 
 const (
 	UsdToEur = 0.85
@@ -9,19 +15,127 @@ const (
 )
 
 func main() {
-	fmt.Printf("1 USD = %.2f EUR\n", UsdToEur)
-	fmt.Printf("1 USD = %.2f RUB\n", UsdToRub)
-	fmt.Printf("1 EUR = %.2f RUB\n", EurToRub)
-}
-func convert(sum float64, fromV, toV string) float64 {
-	return 0
+	fmt.Println("___ Добро пожаловать в конвертор валют! ___")
+	var cur1, cur2 string
+	var sum int
+	for {
+		cur, err := readFirstCurrency()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		cur1 = cur
+		break
+	}
+	fmt.Println("Первая валюта: ", cur1)
+
+	for {
+		s, err := readSum()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		sum = s
+		break
+	}
+	fmt.Println("Сумма для конвертации: ", sum)
+
+	for {
+		cur, err := readSecondCurrency(cur1)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		cur2 = cur
+		break
+	}
+	fmt.Println("Вторая валюта: ", cur2)
+	// Вызов функции конвертации
+	result := convert(float64(sum), cur1, cur2)
+	fmt.Printf("Результат конвертации: %.2f %s = %.2f %s\n", float64(sum), cur1, result, cur2)
 }
 
-func readUsersInput() float64 {
-	var input float64
-	_, err := fmt.Scan(&input)
-	if err != nil {
+func convert(sum float64, fromV, toV string) float64 {
+	// Конвертируем все в USD как базовую валюту
+	var inUsd float64
+
+	switch fromV {
+	case "USD":
+		inUsd = sum
+	case "EUR":
+		inUsd = sum / UsdToEur
+	case "RUB":
+		inUsd = sum / UsdToRub
+	}
+
+	// Конвертируем из USD в целевую валюту
+	switch toV {
+	case "USD":
+		return inUsd
+	case "EUR":
+		return inUsd * UsdToEur
+	case "RUB":
+		return inUsd * UsdToRub
+	default:
 		return 0
 	}
-	return input
+}
+
+func readFirstCurrency() (string, error) {
+	fmt.Print("Введите исходную валюту(USD, EUR или RUB): ")
+	input, err := readInput()
+	if err != nil {
+		return "", err
+	}
+
+	input = strings.ToUpper(strings.TrimSpace(input))
+	if input != "USD" && input != "EUR" && input != "RUB" {
+		return "", errors.New("вы ввели не верную валюту! Попробуйте снова")
+	}
+	return input, nil
+}
+
+func readSecondCurrency(firstCur string) (string, error) {
+	fmt.Print("Введите целевую валюту(USD, EUR или RUB): ")
+	input, err := readInput()
+	if err != nil {
+		return "", err
+	}
+
+	input = strings.ToUpper(strings.TrimSpace(input))
+	if input != "USD" && input != "EUR" && input != "RUB" {
+		return "", errors.New("вы ввели не верную валюту! Попробуйте снова")
+	}
+	if input == firstCur {
+		return "", errors.New("целевая валюта не должна совпадать с исходной! Попробуйте снова")
+	}
+	return input, nil
+}
+
+func readSum() (int, error) {
+	fmt.Print("Введите сумму для конвертации: ")
+	input, err := readInput()
+	if err != nil {
+		return 0, err
+	}
+
+	var sum int
+	_, err = fmt.Sscanf(input, "%d", &sum)
+	if err != nil {
+		return 0, errors.New("вы ввели не верную сумму! Попробуйте снова")
+	}
+	if sum <= 0 {
+		return 0, errors.New("сумма должна быть положительным числом! Попробуйте снова")
+	}
+	return sum, nil
+}
+
+// Новая функция для чтения ввода с очисткой буфера
+func readInput() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return "", errors.New("ошибка чтения ввода")
+	}
+	return strings.TrimSpace(input), nil
 }
