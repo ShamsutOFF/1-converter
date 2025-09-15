@@ -8,12 +8,6 @@ import (
 	"strings"
 )
 
-const (
-	UsdToEur = 0.85
-	UsdToRub = 85.00
-	EurToRub = UsdToRub / UsdToEur
-)
-
 func main() {
 	fmt.Println("___ Добро пожаловать в конвертор валют! ___")
 	var cur1, cur2 string
@@ -57,28 +51,9 @@ func main() {
 
 func convert(sum float64, fromV, toV string) float64 {
 	// Конвертируем все в USD как базовую валюту
-	var inUsd float64
-
-	switch fromV {
-	case "USD":
-		inUsd = sum
-	case "EUR":
-		inUsd = sum / UsdToEur
-	case "RUB":
-		inUsd = sum / UsdToRub
-	}
-
-	// Конвертируем из USD в целевую валюту
-	switch toV {
-	case "USD":
-		return inUsd
-	case "EUR":
-		return inUsd * UsdToEur
-	case "RUB":
-		return inUsd * UsdToRub
-	default:
-		return 0
-	}
+	usdCourse := map[string]float64{"EUR": 0.85, "RUB": 85.00, "USD": 1}
+	inUsd := usdCourse[fromV] * sum
+	return inUsd * usdCourse[toV]
 }
 
 func readFirstCurrency() (string, error) {
