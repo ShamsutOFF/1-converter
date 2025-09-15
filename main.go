@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	usdCourse := map[string]float64{"EUR": 0.85, "RUB": 85.00, "USD": 1}
 	fmt.Println("___ Добро пожаловать в конвертор валют! ___")
 	var cur1, cur2 string
 	var sum int
@@ -45,15 +46,13 @@ func main() {
 	}
 	fmt.Println("Вторая валюта: ", cur2)
 	// Вызов функции конвертации
-	result := convert(float64(sum), cur1, cur2)
+	result := convert(float64(sum), cur1, cur2, usdCourse)
 	fmt.Printf("Результат конвертации: %.2f %s = %.2f %s\n", float64(sum), cur1, result, cur2)
 }
 
-func convert(sum float64, fromV, toV string) float64 {
-	// Конвертируем все в USD как базовую валюту
-	usdCourse := map[string]float64{"EUR": 0.85, "RUB": 85.00, "USD": 1}
-	inUsd := usdCourse[fromV] * sum
-	return inUsd * usdCourse[toV]
+func convert(sum float64, fromV, toV string, courses map[string]float64) float64 {
+	usdAmount := sum / courses[fromV]
+	return usdAmount * courses[toV]
 }
 
 func readFirstCurrency() (string, error) {
