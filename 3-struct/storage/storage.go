@@ -6,7 +6,23 @@ import (
 	"encoding/json"
 )
 
-func SaveBins(list bins.BinList, filename string) error {
+// Storage интерфейс
+type Storage interface {
+	SaveBins(list bins.BinList, filename string) error
+	ReadBins(filename string) (bins.BinList, error)
+}
+
+// FileStorage реализация интерфейса для работы с файлами
+type FileStorage struct {
+	path string
+}
+
+// NewFileStorage конструктор
+func NewFileStorage(path string) *FileStorage {
+	return &FileStorage{path: path}
+}
+
+func (fs *FileStorage) SaveBins(list bins.BinList, filename string) error {
 	bytes, err := json.Marshal(list)
 	if err != nil {
 		return err
@@ -18,7 +34,7 @@ func SaveBins(list bins.BinList, filename string) error {
 	return nil
 }
 
-func ReadBins(filename string) (bins.BinList, error) {
+func (fs *FileStorage) ReadBins(filename string) (bins.BinList, error) {
 	bytes, err := file.ReadFile(filename)
 	if err != nil {
 		return bins.BinList{}, err
