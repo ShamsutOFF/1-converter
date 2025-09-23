@@ -10,6 +10,35 @@ import (
 	"strings"
 )
 
+var operations = map[string]func([]int) float64{
+	"AVG": func(nums []int) float64 {
+		var result float64
+		for _, num := range nums {
+			result += float64(num)
+		}
+		result /= float64(len(nums))
+		return result
+	},
+	"SUM": func(nums []int) float64 {
+		var result float64
+		for _, num := range nums {
+			result += float64(num)
+		}
+		return result
+	},
+	"MED": func(nums []int) float64 {
+		var result float64
+		sort.Ints(nums)
+		if len(nums)%2 == 0 {
+			i := len(nums) / 2
+			result = (float64(nums[i]) + float64(nums[i-1])) / 2.0
+		} else {
+			result = float64(nums[len(nums)/2])
+		}
+		return result
+	},
+}
+
 func main() {
 	fmt.Println("___ Добро пожаловать в калькулятор ___")
 	var operation string
@@ -35,26 +64,8 @@ func main() {
 		break
 	}
 	fmt.Println("Вы ввели: ", nums)
-	var result float64
-	switch operation {
-	case "AVG":
-		for _, num := range nums {
-			result += float64(num)
-		}
-		result /= float64(len(nums))
-	case "SUM":
-		for _, num := range nums {
-			result += float64(num)
-		}
-	case "MED":
-		sort.Ints(nums)
-		if len(nums)%2 == 0 {
-			i := len(nums) / 2
-			result = (float64(nums[i]) + float64(nums[i-1])) / 2.0
-		} else {
-			result = float64(nums[len(nums)/2])
-		}
-	}
+	result := operations[operation](nums)
+
 	fmt.Println("Результат операции: ", result)
 }
 
