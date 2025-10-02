@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type Api struct {
@@ -18,7 +19,7 @@ type Api struct {
 func NewApi(cfg *config.Config) *Api {
 	return &Api{
 		Config: cfg,
-		Client: &http.Client{},
+		Client: &http.Client{Timeout: 15 * time.Second}, // ⬅️ теперь максимум 15 сек
 	}
 }
 
@@ -75,43 +76,62 @@ func (a *Api) CreateBin(bin bins.Bin) (*bins.Bin, error) {
 }
 
 // GetBin Получение Bin
+// GetBin получает Bin с retry и расширенными логами
 func (a *Api) GetBin(id string) (*bins.Bin, error) {
 	url := fmt.Sprintf("https://api.jsonbin.io/v3/b/%s", id)
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-Master-Key", a.Config.Key)
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		fmt.Printf("➡️ [GetBin] Attempt %d: URL=%s\n", attempt, url)
 
-	resp, err := a.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
+		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("request build error: %v", err)
 		}
-	}(resp.Body)
+		req.Header.Set("X-Master-Key", a.Config.Key)
 
-	body, _ := io.ReadAll(resp.Body)
+		resp, err := a.Client.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("request error: %v", err)
+			fmt.Println("⚠️ [GetBin] request failed:", lastErr)
+			time.Sleep(time.Second) // пауза перед повтором
+			continue
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API error: %s", string(body))
+		body, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close() // закрываем сразу
+		fmt.Printf("➡️ [GetBin] Status=%d; len(body)=%d\n", resp.StatusCode, len(body))
+
+		if err != nil {
+			lastErr = fmt.Errorf("read body error: %v", err)
+			fmt.Println("⚠️ [GetBin] body read failed:", lastErr)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+			fmt.Println("⚠️ [GetBin] bad status:", lastErr)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		var result struct {
+			Record bins.Bin `json:"record"`
+		}
+		if err := json.Unmarshal(body, &result); err != nil {
+			lastErr = fmt.Errorf("unmarshal error: %v, raw=%s", err, string(body))
+			fmt.Println("⚠️ [GetBin] JSON parse failed:", lastErr)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		result.Record.ID = id
+		fmt.Println("✅ [GetBin] Success:", result.Record)
+		return &result.Record, nil
 	}
 
-	var result struct {
-		Record bins.Bin `json:"record"`
-	}
-
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	result.Record.ID = id
-	return &result.Record, nil
+	return nil, fmt.Errorf("GetBin failed after 3 attempts: %v", lastErr)
 }
 
 // UpdateBin Обновление Bin

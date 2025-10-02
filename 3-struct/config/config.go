@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -15,7 +14,7 @@ func NewConfig() *Config {
 	// Загружаем .env только один раз
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("⚠️ Не удалось загрузить .env файл, использую только системные переменные")
+		//log.Println("⚠️ Не удалось загрузить .env файл, использую только системные переменные")
 	}
 
 	key := os.Getenv("KEY")
