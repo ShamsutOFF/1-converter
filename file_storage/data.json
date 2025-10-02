@@ -1,0 +1,11 @@
+{
+  "bins": [
+    {
+      "id": "68da224c43b1c97be953b7a8",
+      "private": false,
+      "createdAt": "0001-01-01T00:00:00Z",
+      "name": "TestBin",
+      "content": "Hello from local file"
+    }
+  ]
+}
